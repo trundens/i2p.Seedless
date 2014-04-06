@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project basedir="." default="all" name="i2p.Seedless">
+
+	<!-- 
+		Notes:
+		The I2P plugin zip file should be in an i2pupdate.zip type format,
+		as if you were to use it as an update. 
+		
+		This means that console webapps go into the webapps directory. 
+		Don't worry, I move them for you.
+		
+		You must have built I2P for any of this to work, or have it installed,
+		and accessable relative to this project.
+	-->
+
+
+	<!-- Settings -->
+
+
+	<!-- The entire project base location, relative to this build.xml -->
+	<property name="plugin.MYBASE" value="../.." />
+
+	<!-- 
+		Where your project dumps the zip file, 
+		relative to the project root
+	-->
+	<property name="MY.DIST" value="dist" />
+
+	<!-- 
+		This is the name of the plugin zip file 
+		located in the dist directory.
+	-->
+	<property name="MY.ZIPFILE" value="i2pupdate.zip" />
+
+	<!-- Where I2P is relative to the project root -->
+	<property name="I2PISHERE" value="../i2p.i2p/build" />
+
+	<!-- Signing keys location and file names. -->
+	<property name="MY.PUBKEYDIR" value="${user.home}/.i2p-plugin-keys" />
+	<property name="MY.PUBKEYFILE" value="plugin-public-signing.key" />
+	<property name="MY.PRIVKEYFILE" value="plugin-private-signing.key" />
+	<property name="MY.B64KEYFILE" value="plugin-public-signing.txt" />
+
+	<target name="versions">
+		<echo message="Getting plugin version information..." />
+		<!-- 
+			Modify this section to get the version of your plugin. 
+			My plugins print this information to stdout.
+			You need it to set the property plugin.DEPLOY
+		-->
+
+		<!-- get versions -->
+
+		<exec dir="." executable="java" failonerror="true" outputproperty="plugin.RELEASE">
+			<arg value="-cp" />
+			<arg value="${plugin.MYBASE}/neodatis/dist/neodatis.jar:${plugin.MYBASE}/SeedlessCore/dist/SeedlessCore.jar" />
+			<arg value="net.i2p.seedless.Version" />
+		</exec>
+
+		<split value="${plugin.RELEASE}" sep="\n" prefix="locate.LINE." />
+		<split value="${locate.LINE.0}" sep=" " prefix="locate.RELEASE." />
+		<property name="plugin.HEXREL" value="${locate.RELEASE.2}" />
+		<!-- 
+			To get the version from the war sources, we need to
+			actually look at the source code.
+		-->
+		<property name="plugin.VSRC" value="${plugin.MYBASE}/SeedlessConsole/src/java/net/i2p/seedless/console/Version.java" />
+		<loadfile srcfile="${plugin.VSRC}" property="locate.CONSOLEVERSION.line">
+			<filterchain>
+				<filterreader classname="org.apache.tools.ant.filters.LineContains">
+					<param type="contains" value="VERSION"/>
+				</filterreader>
+				<filterreader classname="org.apache.tools.ant.filters.HeadFilter">
+					<param name="lines" value="1"/>
+				</filterreader>
+			</filterchain>
+		</loadfile>
+		<split value="${locate.CONSOLEVERSION.line}" sep='"' prefix="locate.CONSOLEVERSION." />
+		<property name="plugin.CON" value="${locate.CONSOLEVERSION.1}" />
+		<property name="plugin.hexcon" value="${plugin.HEXREL}.${plugin.CON}" />
+		<split value="${plugin.HEXREL}.${plugin.CON}" sep="\." prefix="locate.hexdigits." />
+		<decimal prefix="locate.decimal.0" value="0x${locate.hexdigits.0}" />
+		<decimal prefix="locate.decimal.1" value="0x${locate.hexdigits.1}" />
+		<decimal prefix="locate.decimal.2" value="0x${locate.hexdigits.2}" />
+		<decimal prefix="locate.decimal.3" value="0x${locate.hexdigits.3}" />
+		<decimal prefix="locate.decimal.4" value="0x${locate.hexdigits.4}" />
+		<decimal prefix="locate.decimal.5" value="0x${locate.hexdigits.5}" />
+		<property name="plugin.DEPLOY" value="${locate.decimal.0}.${locate.decimal.1}.${locate.decimal.2}-${locate.decimal.3}.${locate.decimal.4}.${locate.decimal.5}" />
+	</target>
+
+
+
+	<!-- NO USER SERVICABLE PARTS BELOW THIS COMMENT -->
+
+
+
+	<!-- Utility scripts -->
+
+	<!-- Split a string -->
+	<scriptdef name="split" language="javascript">
+	   	<attribute name="value"/>
+	   	<attribute name="sep"/>
+	   	<attribute name="prefix"/>
+	   	<![CDATA[
+		values = attributes.get("value").split(attributes.get("sep"));
+		for(i = 0; i < values.length; i++) {
+			project.setNewProperty(attributes.get("prefix") + i, values[i]);
+		}
+	   	]]>
+	</scriptdef>
+
+	<!-- return milliseconds since epoch UTC -->
+	<scriptdef name="rightnow" language="javascript">
+	   	<attribute name="prefix"/>
+	   	<![CDATA[
+		dDate = new Date();
+		yourNumber = (dDate.getTime()-dDate.getMilliseconds());
+		project.setNewProperty(attributes.get("prefix"), yourNumber);
+	   	]]>
+	</scriptdef>
+
+	<!-- convert any base to integer -->
+	<scriptdef name="decimal" language="javascript">
+	   	<attribute name="value"/>
+	   	<attribute name="prefix"/>
+	   	<![CDATA[
+		yourNumber = parseInt(attributes.get("value"));
+		project.setNewProperty(attributes.get("prefix"), yourNumber);
+	   	]]>
+	</scriptdef>
+
+
+
+	<!-- Pull the plugin name out of the config file -->
+	<property name="plugin.PC" value="plugin.config" />
+	<loadfile srcfile="${plugin.PC}" property="plugin.NAMELINE" >
+	<filterchain>
+		<filterreader classname="org.apache.tools.ant.filters.LineContainsRegExp">
+	   	<param type="regexp" value="^name=(.*)$"/>
+		</filterreader>
+	</filterchain>
+	</loadfile>
+	<split value="${plugin.NAMELINE}" sep="\n" prefix="locate.NAMELINE." />
+	<split value="${locate.NAMELINE.0}" sep="=" prefix="locate.NAME" />
+	<property name="plugin.NAME" value="${locate.NAME1}" />
+
+	<!-- Setup all the properties we will be needing -->
+	<property name="plugin.PUBKEYDIR" value="${MY.PUBKEYDIR}" />
+	<property name="plugin.PUBKEYFILE" value="${plugin.PUBKEYDIR}/${MY.PUBKEYFILE}" />
+	<property name="plugin.PRIVKEYFILE" value="${plugin.PUBKEYDIR}/${MY.PRIVKEYFILE}" />
+	<property name="plugin.B64KEYFILE" value="${plugin.PUBKEYDIR}/${MY.B64KEYFILE}" />
+	<property name="plugin.I2P" value="${plugin.MYBASE}/${I2PISHERE}" />
+	<property name="plugin.DISTDIR" value="${plugin.MYBASE}/${MY.DIST}" />
+	<property name="plugin.ZIPFILE" value="${plugin.DISTDIR}/${MY.ZIPFILE}" />
+	<property name="plugin.CP" value="${plugin.I2P}/i2p.jar:${plugin.I2P}/jbigi.jar" />
+	<property name="plugin.PCT" value="${plugin.PC}.tmp" />
+
+
+	<!-- Standard targets -->
+
+	<target name="help" depends="all" />
+	<target name="all" >
+		<echo message="Useful targets: " />
+		<echo message="  dist:   Make ${plugin.NAME}.xpi2p plugin" />
+		<echo message="  clean:  Clean everything up, delete ${plugin.NAME}.xpi2p plugin" />
+	</target>
+
+	<target name="clean">
+		<echo message="${line.separator}" />
+		<delete file="${plugin.NAME}.xpi2p" />
+		<delete dir="work" />
+			<defaultexcludes remove="**/*~"/>
+		<delete>
+			<fileset dir="." includes="**/*.*~" />
+		</delete>
+		<defaultexcludes default="true"/>
+	</target>
+
+	<target name="updateconfigs" depends="versions" >
+		<echo message="Updating plugin config..." />
+		<!-- Remove old version and date lines -->
+		<copy file="${plugin.PC}" tofile="${plugin.PCT}" overwrite="true" >
+			<filterchain>
+				<filterreader classname="org.apache.tools.ant.filters.LineContainsRegExp">
+					<param type="negate" value="true"/>
+	 				<param type="regexp" value="^version=.*"/>
+				</filterreader>
+				<filterreader classname="org.apache.tools.ant.filters.LineContainsRegExp">
+	  				<param type="negate" value="true"/>
+	  				<param type="regexp" value="^date=.*"/>
+				</filterreader>
+			</filterchain>
+		</copy>
+		<rightnow prefix="plugin.DATE" />
+		<!-- Then update the version... -->
+		<echo file="${plugin.PCT}" append="true" message="version=${plugin.DEPLOY}${line.separator}" />
+		<!-- Then update the date... -->
+		<echo file="${plugin.PCT}" append="true" message="date=${plugin.DATE}${line.separator}" />
+		<!-- Then copy it... -->
+		<copy file="${plugin.PCT}" tofile="${plugin.PC}" overwrite="true" />
+		<!-- Finally, clean up -->
+		<delete file="${plugin.PCT}" />
+	</target>
+
+	<target name="unpack">
+		<copy file="${plugin.ZIPFILE}" tofile="plugin.zip" overwrite="true" />
+		<unzip src="plugin.zip" dest="work" />
+	</target>
+
+	<target name="webapps.check" depends="unpack" >
+		<echo message="Checking for console webapps..." />
+		<condition property="webapps.exist">
+			<available file="work/webapps" type="dir"/>
+		</condition>
+	</target>
+
+	<target name="got.console" depends="webapps.check" unless="webapps.exist" >
+		<echo message="No console webapps..." />
+	</target>
+	
+	<target name="console.webapps" depends="got.console" if="webapps.exist" >
+		<echo message="Moving console webapps..." />
+		<mkdir dir="work/console" />
+		<move file="work/webapps" tofile="work/console/webapps"/>
+	</target>
+
+	<target name="buildplugin" depends="updateconfigs,console.webapps" >
+		<echo message="Building plugin for '${plugin.NAME}' version ${plugin.DEPLOY}${line.separator}" />
+		<!-- build plugin -->
+		<delete file="plugin.zip" />
+		<zip destfile="plugin.zip" basedir="work" />
+		<delete dir="work" />
+		<zip update="true" destfile="plugin.zip" basedir="." includes="plugin.config clients.config webapps.config" />
+	</target>
+	
+	<target name="dist" depends="clean,buildplugin" >
+		<echo message="Signing plugin..."/>
+
+		<!-- Sign the plugin -->
+		<exec dir="." executable="java" failonerror="true" >
+			<arg value="-cp" />
+			<arg value="${plugin.CP}" />
+			<arg value="net.i2p.crypto.TrustedUpdate" />
+			<arg value="sign" />
+			<arg value="plugin.zip" />
+			<arg value="${plugin.NAME}.xpi2p" />
+			<arg value="${plugin.PRIVKEYFILE}" />
+			<arg value="${plugin.DEPLOY}" />
+		</exec>
+		<delete file="plugin.zip" />
+
+		<!-- Cleanup I2P's mess -->
+		<delete dir="logs" />	
+		<delete>
+			<fileset dir="." includes="*jbigi*" />
+		</delete>
+		<delete>
+			<fileset dir="." includes="*jcpuid*" />
+		</delete>
+		<echo message="Done!" />
+	</target>
+
+</project>
+

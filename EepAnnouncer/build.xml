@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- You may freely edit this file. See commented blocks below for -->
+<!-- some examples of how to customize the build. -->
+<!-- (If you delete it and reopen the project it will be recreated.) -->
+<!-- By default, only the Clean and Build commands use this build script. -->
+<!-- Commands such as Run, Debug, and Test only use this build script if -->
+<!-- the Compile on Save feature is turned off for the project. -->
+<!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
+<!-- in the project's Project Properties dialog box.-->
+<project name="EeepAnnouncer" default="default" basedir="." xmlns:webproject2="http://www.netbeans.org/ns/web-project/2">
+    <description>Builds, tests, and runs the project EeepAnnouncer.</description>
+    <import file="nbproject/build-impl.xml"/>
+    <!--
+
+    There exist several targets which are by default empty and which can be 
+    used for execution of your tasks. These targets are usually executed 
+    before and after some main targets. They are: 
+
+      -pre-init:                 called before initialization of project properties 
+      -post-init:                called after initialization of project properties 
+      -pre-compile:              called before javac compilation 
+      -post-compile:             called after javac compilation 
+      -pre-compile-single:       called before javac compilation of single file
+      -post-compile-single:      called after javac compilation of single file
+      -pre-compile-test:         called before javac compilation of JUnit tests
+      -post-compile-test:        called after javac compilation of JUnit tests
+      -pre-compile-test-single:  called before javac compilation of single JUnit test
+      -post-compile-test-single: called after javac compilation of single JUunit test
+      -pre-dist:                 called before archive building 
+      -post-dist:                called after archive building 
+      -post-clean:               called after cleaning build products 
+      -pre-run-deploy:           called before deploying
+      -post-run-deploy:          called after deploying
+
+    Example of pluging an obfuscator after the compilation could look like 
+
+        <target name="-post-compile">
+            <obfuscate>
+                <fileset dir="${build.classes.dir}"/>
+            </obfuscate>
+        </target>
+
+    For list of available properties check the imported 
+    nbproject/build-impl.xml file. 
+
+
+    Other way how to customize the build is by overriding existing main targets.
+    The target of interest are: 
+
+      init-macrodef-javac:    defines macro for javac compilation
+      init-macrodef-junit:   defines macro for junit execution
+      init-macrodef-debug:    defines macro for class debugging
+      do-dist:                archive building
+      run:                    execution of project 
+      javadoc-build:          javadoc generation 
+
+    Example of overriding the target for project execution could look like 
+
+        <target name="run" depends="<PROJNAME>-impl.jar">
+            <exec dir="bin" executable="launcher.exe">
+                <arg file="${dist.jar}"/>
+            </exec>
+        </target>
+
+    Notice that overridden target depends on jar target and not only on 
+    compile target as regular run target does. Again, for list of available 
+    properties which you can use check the target you are overriding in 
+    nbproject/build-impl.xml file. 
+
+    -->
+    <property name="libs.CopyLibs.classpath" value="../extra/org-netbeans-modules-java-j2seproject-copylibstask.jar"/>
+
+    <condition property="i2p" value="true">
+        <and>
+            <available file="../../i2p.i2p/apps/jetty/jettylib/javax.servlet.jar"/>
+            <not>
+                <available file="../build.nb"/>
+            </not>
+        </and>
+    </condition>
+
+    <condition property="netbeans" value="true">
+                <available file="../build.nb"/>
+    </condition>
+
+    <!--
+    Override -post-init if we need to do a fake j2ee classpath
+    -->
+    <target name="-post-init" unless="j2ee.platform.classpath">
+        <echo message="Setting j2ee.platform.classpath"/>
+        <property name="j2ee.platform.classpath" value="../../i2p.i2p/apps/jetty/jettylib/ant.jar:../../i2p.i2p/apps/jetty/jettylib/commons-el.jar:../../i2p.i2p/apps/jetty/jettylib/commons-logging.jar:../../i2p.i2p/apps/jetty/jettylib/jasper-compiler.jar:../../i2p.i2p/apps/jetty/jettylib/jasper-runtime.jar:../../i2p.i2p/apps/jetty/jettylib/javax.servlet.jar:../../i2p.i2p/apps/jetty/jettylib/org.mortbay.jetty.jar:../../i2p.i2p/apps/jetty/jettylib/org.mortbay.jmx.jar" />
+     </target>
+<!--
+    <echo message="i2p: ${i2p}"/>
+    <echo message="netbeans: ${netbeans}"/>
+-->
+    <target name="war-with" if="do.war.package.with.custom.manifest">
+        <dirname file="${dist.war}" property="dist.jar.dir"/>
+        <jar compress="${jar.compress}" jarfile="${dist.war}" manifest="${build.meta.inf.dir}/MANIFEST.MF">
+            <fileset dir="${build.web.dir}"/>
+        </jar>
+    </target>
+
+    <target name="war-without" if="do.war.package.without.custom.manifest">
+        <dirname file="${dist.war}" property="dist.jar.dir"/>
+        <jar if="do.tmp.war.package.without.custom.manifest" compress="${jar.compress}" jarfile="${dist.war}">
+            <fileset dir="${build.web.dir}"/>
+        </jar>
+    </target>
+
+    <target name="copy-classes-and-zap-jsp">
+        <copy todir="${build.classes.dir}">
+          <fileset dir="${build.generated.dir}/classes"/>
+        </copy>
+        <copy todir="${build.classes.dir}">
+          <fileset dir="${build.generated.dir}/src"/>
+        </copy>
+        <delete file="${build.web.dir}/index.jsp"/>
+
+
+    </target>
+    <target name="-post-dist" depends="copy-classes-and-zap-jsp,war-with,war-without">
+    </target>
+
+    <target name="-pre-run-deploy" depends="-post-dist">
+    </target>
+
+
+    <!-- override build-impl.xml -->
+    <target depends="compile,compile-jsps-netbeans,compile-jsps-i2p" description="Test compile JSP pages to expose compilation errors." if="do.compile.jsps" name="compile-jsps" />
+    <target depends="compile,-do-compile-single-jsp-netbeans,compile-jsps-i2p" if="jsp.includes" name="-do-compile-single-jsp" />
+
+
+    <!-- compile the i2p way -->
+    <property name="jettypath" value="../../i2p.i2p/apps/jetty/jettylib"/>
+    <property name="jetty.jasper-compiler" value="${jettypath}/jasper-compiler.jar"/>
+    <property name="jetty.jasper-runtime" value="${jettypath}/jasper-runtime.jar"/>
+    <property name="jetty.javax.servlet" value="${jettypath}/javax.servlet.jar"/>
+    <property name="jetty.commons-logging" value="${jettypath}/commons-logging.jar"/>
+    <property name="jetty.commons-el" value="${jettypath}/commons-el.jar"/>
+    <property name="jetty.ant" value="${jettypath}/ant.jar"/>
+
+    <property name="jetty" value="${jetty.jasper-runtime}:${jetty.javax.servlet}:${jetty.commons-logging}:${jetty.commons-el}:${jetty.ant}" />
+
+    <target if="i2p" depends="compile" description="Test compile JSP pages to expose compilation errors." name="compile-jsps-i2p">
+        <mkdir dir="${build.generated.dir}/src"/>
+        <java classname="org.apache.jasper.JspC" fork="true" failonerror="true" >
+            <arg value="-uriroot"/>
+            <arg file="${basedir}/${build.web.dir}"/>
+            <arg value="-d"/>
+            <arg file="${basedir}/${build.generated.dir}/src"/>
+            <arg value="-die1"/>
+            <classpath path="${jetty.jasper-compiler}:${jetty}:${java.home}/../lib/tools.jar:${jspctask.classpath}:${jspcompilation.classpath}:${build.classes.dir}"/>
+        </java>
+        <mkdir dir="${build.generated.dir}/classes"/>
+        <javac debug="true" deprecation="on" source="1.5" target="1.5"
+            encoding="${source.encoding}"
+            destdir="${build.generated.dir}/classes"
+            srcdir="${build.generated.dir}/src"
+            includes="**/*.java"
+            classpath="${jetty}:${jettypath}/org.mortbay.jetty.jar:${java.home}/../lib/tools.jar:${jspctask.classpath}:${jspcompilation.classpath}:${build.classes.dir}">
+            <compilerarg line="${javac.compilerargs}"/>
+        </javac>
+    </target>
+
+    <target if="i2p" depends="compile" name="-do-compile-single-jsp-i2p">
+        <echo>Not implemented: -do-compile-single-jsp-i2p</echo>
+    </target>
+
+
+    <!-- compile the netbeans way -->
+    <target if="netbeans" depends="compile" description="Test compile JSP pages to expose compilation errors." name="compile-jsps-netbeans">
+        <mkdir dir="${build.generated.dir}/src"/>
+        <java classname="org.netbeans.modules.web.project.ant.JspC" failonerror="true" fork="true">
+            <arg value="-uriroot"/>
+            <arg file="${basedir}/${build.web.dir}"/>
+            <arg value="-d"/>
+            <arg file="${basedir}/${build.generated.dir}/src"/>
+            <arg value="-die1"/>
+            <arg value="-compilerSourceVM ${javac.source}"/>
+            <arg value="-compilerTargetVM ${javac.target}"/>
+            <arg value="-javaEncoding ${source.encoding}"/>
+            <classpath path="${java.home}/../lib/tools.jar:${jspctask.classpath}:${jspcompilation.classpath}"/>
+        </java>
+        <mkdir dir="${build.generated.dir}/classes"/>
+        <webproject2:javac classpath="${j2ee.platform.classpath}:${build.classes.dir}:${jspcompilation.classpath}" destdir="${build.generated.dir}/classes" srcdir="${build.generated.dir}/src"/>
+    </target>
+
+    <target if="netbeans" depends="compile" name="-do-compile-single-jsp-netbeans">
+        <fail unless="javac.jsp.includes">Must select some files in the IDE or set javac.jsp.includes</fail>
+        <mkdir dir="${build.generated.dir}/src"/>
+        <java classname="org.netbeans.modules.web.project.ant.JspCSingle" failonerror="true" fork="true">
+            <arg value="-uriroot"/>
+            <arg file="${basedir}/${build.web.dir}"/>
+            <arg value="-d"/>
+            <arg file="${basedir}/${build.generated.dir}/src"/>
+            <arg value="-die1"/>
+            <arg value="-jspc.files"/>
+            <arg path="${jsp.includes}"/>
+            <arg value="-compilerSourceVM ${javac.source}"/>
+            <arg value="-compilerTargetVM ${javac.target}"/>
+            <arg value="-javaEncoding ${source.encoding}"/>
+            <classpath path="${java.home}/../lib/tools.jar:${jspctask.classpath}:${jspcompilation.classpath}"/>
+        </java>
+        <mkdir dir="${build.generated.dir}/classes"/>
+        <webproject2:javac classpath="${j2ee.platform.classpath}:${build.classes.dir}:${jspcompilation.classpath}" destdir="${build.generated.dir}/classes" srcdir="${build.generated.dir}/src">
+            <customize>
+                <patternset includes="${javac.jsp.includes}"/>
+            </customize>
+        </webproject2:javac>
+    </target>
+
+    <!-- now override -do-compile so that classpath is set properly -->
+    <target depends="-do-compile-netbeans,-do-compile-i2p" if="have.sources" name="-do-compile"/>
+    <target if="i2p" depends="init, deps-jar, -pre-pre-compile, -pre-compile, -copy-manifest, -copy-persistence-xml, -copy-webdir, library-inclusion-in-archive,library-inclusion-in-manifest,-do-ws-compile" name="-do-compile-i2p">
+        <webproject2:javac classpath="../../i2p.i2p/apps/jetty/jettylib/javax.servlet.jar:${j2ee.platform.classpath}:${build.classes.dir}:${jspcompilation.classpath}" destdir="${build.classes.dir}" />
+        <copy todir="${build.classes.dir}">
+            <fileset dir="${src.dir}" excludes="${build.classes.excludes},${excludes}" includes="${includes}"/>
+        </copy>
+    </target>
+    <target if="netbeans" depends="init, deps-jar, -pre-pre-compile, -pre-compile, -copy-manifest, -copy-persistence-xml, -copy-webdir, library-inclusion-in-archive,library-inclusion-in-manifest,-do-ws-compile" name="-do-compile-netbeans">
+        <webproject2:javac destdir="${build.classes.dir}"/>
+        <copy todir="${build.classes.dir}">
+            <fileset dir="${src.dir}" excludes="${build.classes.excludes},${excludes}" includes="${includes}"/>
+        </copy>
+    </target>
+
+
+</project>

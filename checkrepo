@@ -1,0 +1,5 @@
+#!/bin/bash
+ant clean 2> /dev/null 1>&2
+rm -f *~
+mtn list u | grep -ve "uploadann.sh" -ve "uploadcore.sh" -ve "uploadneo.sh" -ve "uploadsvr.sh" -ve "upload.sh" -ve ".jar" -ve ".xpi2p" -ve ".tmp" -ve "plugin.zip" -ve private -ve test -ve checkrepo
+

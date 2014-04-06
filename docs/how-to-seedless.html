@@ -1,0 +1,123 @@
+<html><head><title>Seedless HOW-TO</title>
+Prerequisites:
+I2P-0.7.11 OR LATER
+
+
+<link rel="shortcut icon" href="http://sponge.i2p/files/seedless/favicon.ico"></head><body>
+<pre>TO INSALL SEEDLESS:
+1: Get the neodatis i2pupdate.zip, copy it to your i2p install directory.
+2: Restart your router.
+3: Get the Seedless i2pupdate.zip, copy it to your i2p install directory.
+4: Restart your router.
+
+
+Seedless console is at http://127.0.0.1:7657/SeedlessConsole/
+
+You won't have to update neodatis unless there is a newer version posted.
+You are fully welcome to get and unpack neodatis for yourself from
+https://sourceforge.net/projects/neodatis-odb/files/
+Be sure to use 2.1.beta12-180 (12-01-2010-09-08-37) or newer. 
+I'll try to keep up with what is there for the 2.x series.
+
+Something went wrong/FAQ:
+
+Q1: Where did my router console go?
+A1: You have an ancient wrapper.config.
+     remove all lines containing wrapper.java.classpath.x and put in a
+     single one that reads 
+         wrapper.java.classpath.1=/path/to/installed/i2p/lib/*.jar
+     On win32, the default for this is
+         wrapper.java.classpath.1=C:\Program Files\i2p/lib/*.jar
+       That's no typo either, the slashes go this and that way :-D
+      On linux/unix type default installs, the default is one of the following:
+         wrapper.java.classpath.1=/usr/local/i2p/lib/*.jar
+        or
+         wrapper.java.classpath.1=/opt/i2p/lib/*.jar
+
+Q2: I see stuff about can't find neodatis jar, and/or seedlesscore jar files
+    in wrapper.log!
+A2: See A1, above.
+
+Q3: http://127.0.0.1:7657/SeedlessConsole/ doesn't work!
+A3: Check your wrapper.log, and see A1, above.
+
+<hr>
+
+TO RUN A SEEDLESS SERVER OR HIDDEN EEPSITE:
+
+1: Shut down your router completely.
+2: In a text editor, edit i2ptunnel.config, and locate the tunnel containing
+    your eepsite.
+3: Add/change the lines to the correct tunnel... see notes below.
+4: Be sure you can actually run webapps.... see notes below about jetty.xml
+5: double check that your tunnel is the new bidir version of the http server
+   from the router console and that it is up and running and that it is started
+   automatically at startup.
+6: drop Seedless.war AND/OR EepAnnouncer.war into your webapps dir (eepsite/webapps)
+7: Start your router.
+8: Watch your wrapper log for information.
+
+
+
+||||| NOTE |||||
+Classic installs:
+Everything where you installed. If you lack a.i2p directory in your home dir, 
+then you have the classic installation.
+
+Newer installs:
+The config files are located under ~/.i2p/
+So, for example, if you run i2p as root, the config files are at /root/.i2p/
+If you run it as user sponge, it would be under /home/sponge/.i2p/
+
+For windows newer installs, aparently the files are in %APPDATA%\I2P\
+
+
+||||| NOTES on i2ptunnel.config |||||
+CHANGE type=httpserver to type=httpbidirserver
+CHANGE startOnLoad=false to startOnLoad=true
+ADD interface=127.0.0.1
+ADD listenPort=4488
+
+
+||||| NOTES on eepsite/jetty.xml |||||
+Find a section that looks like this:
+  &lt;Set name="rootWebApp"&gt;root&lt;/Set&gt;
+  &lt;!-- UNCOMMENT TO ACTIVATE
+  &lt;Call name="addWebApplications"&gt;
+    &lt;Arg&gt;&lt;/Arg&gt;
+    &lt;Arg&gt;./eepsite/webapps/&lt;/Arg&gt;
+    &lt;Arg&gt;&lt;/Arg&gt;
+    &lt;Arg type="boolean"&gt;true&lt;/Arg&gt;
+  &lt;/Call&gt;
+  --&gt;
+  
+
+and make it look like this:
+  &lt;!-- UNCOMMENT TO ACTIVATE --&gt;
+  &lt;Call name="addWebApplications"&gt;
+    &lt;Arg&gt;&lt;/Arg&gt;
+    &lt;Arg&gt;./eepsite/webapps/&lt;/Arg&gt;
+    &lt;Arg&gt;&lt;/Arg&gt;
+    &lt;Arg type="boolean"&gt;true&lt;/Arg&gt;
+    &lt;Arg type="boolean"&gt;true&lt;/Arg&gt;
+    &lt;Arg&gt;
+      &lt;Array type="java.lang.String"&gt;
+        &lt;Item&gt;i2p.b32&lt;/Item&gt;
+              &lt;!-- your b32 address here --&gt;
+        &lt;Item&gt;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.b32.i2p&lt;/Item&gt;
+      &lt;/Array&gt;
+    &lt;/Arg&gt;
+  &lt;/Call&gt;
+&lt;!--  --&gt;
+
+
+*******IMPORTANT*********
+Be sure that you remove or fix BOTH LINES 
+            "&lt;!-- UNCOMMENT TO ACTIVATE" and "--&gt;"
+            if you have them! SOME installations will not.
+
+Be sure to set *YOUR* b32.i2p address!!!  
+            DO-NOT include the "http://" or the trailing "/"
+</pre>
+
+</body></html>
